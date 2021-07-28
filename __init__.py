@@ -6,6 +6,7 @@
 
 from flask import Flask
 from dotenv import load_dotenv
+from . import common_responses
 
 load_dotenv()
 
@@ -18,6 +19,6 @@ def create_app():
 
     @app.route('/')
     def root():
-        return 'Welcome to arcfapi :)'
+        return 'Welcome to .direwolf\'s api :)'
 
     return app

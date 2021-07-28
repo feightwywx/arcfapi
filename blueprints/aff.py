@@ -4,6 +4,7 @@
 # (c)2021 .direwolf <kururinmiracle@outlook.com>
 # Licensed under the MIT License.
 
+from arcfutil.aff.note import arc
 from flask import Blueprint, request
 from arcfutil import aff as a
 from arcfutil import exception as aex
@@ -160,3 +161,24 @@ def timing_glitch():
         return make_fail_response('未知错误: ' + str(e))
 
     return make_success_response(str(arclist))
+
+
+@bp.route('/chart/offset', methods=['GET','POST'])
+def chart_offset():
+    if request.method == 'GET':
+        aff = request.args.get('aff')
+        offset = request.args.get('offset')
+    elif request.method == 'POST':
+        aff = request.form.get('aff')
+        offset = request.form.get('offset')
+
+    try:
+        arclist = a.load(aff)
+        arclist.offsetto(int(offset))
+        if not aff.startswith('AudioOffset'):
+            arclist = a.NoteGroup(arclist)
+    except Exception as e:
+        return make_fail_response('未知错误：' + str(e))
+
+    return make_success_response(str(arclist))
+

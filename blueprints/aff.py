@@ -177,6 +177,7 @@ def chart_offset():
         arclist.offsetto(int(offset))
         if not aff.startswith('AudioOffset'):
             arclist = a.NoteGroup(arclist)
+            arclist.pop(0)
     except Exception as e:
         return make_fail_response('未知错误：' + str(e))
 

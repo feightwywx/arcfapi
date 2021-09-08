@@ -104,12 +104,12 @@ def arc_rain():
     step = request.args.get('step')
     length = request.args.get('length')
 
-    count = (int(stop) - int(start)) / int(step)
+    count = (int(stop) - int(start)) / float(step)
     if count > 512:
         return make_fail_response('细分数量过大（最大支持512细分）')
 
     try:
-        arclist = a.generator.arc_rain(int(start), int(stop), int(step), int(length) if length is not None else None)
+        arclist = a.generator.arc_rain(int(start), int(stop), float(step), float(length) if length is not None else None)
     except Exception as e:
         return make_fail_response('未知错误: ' + str(e))
 

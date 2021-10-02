@@ -4,7 +4,6 @@
 # (c)2021 .direwolf <kururinmiracle@outlook.com>
 # Licensed under the MIT License.
 
-from arcfutil.aff.note import arc
 from flask import Blueprint, request
 from arcfutil import aff as a
 from arcfutil import exception as aex
@@ -69,6 +68,21 @@ def arc_split():
     )))
 
 
+@bp.route('/arc/splitbytiming', methods=['GET'])
+def arc_split_by_timing():
+    arc = request.args.get('arc')
+    timings = request.args.get('timings')
+
+    arc_obj = a.loadline(arc)
+    if not isinstance(arc_obj, a.Arc):
+        return make_fail_response(''.join('Invalid Arc string: ', arc))
+    timings_obj = a.load(timings)
+
+    result = a.generator.arc_slice_by_timing(arc_obj, timings_obj)
+
+    return make_success_response(str(result))
+
+
 @bp.route('/arc/crease-line', methods=['GET'])
 def arc_crease_line():
     arcstring = request.args.get('arcstring')
@@ -95,6 +109,94 @@ def arc_crease_line():
         return make_fail_response('未知错误: ' + str(e))
 
     return make_success_response(str(arclist))
+
+
+@bp.route('/arc/construct', methods=['GET'])
+def arc_construct():
+    start = int(request.args.get('start'))
+    stop = int(request.args.get('stop'))
+    start_x = float(request.args.get('start_x'))
+    stop_x = float(request.args.get('stop_x'))
+    start_y = float(request.args.get('start_y'))
+    stop_y = float(request.args.get('stop_y'))
+    easing = request.args.get('easing')
+    color = int(request.args.get('color'))
+    skyline = request.args.get('skyline')
+    if skyline == 'true':
+        skyline = True
+    elif skyline == 'false':
+        skyline = False
+    else:
+        return make_fail_response(''.join(['Invalid skyline value: ', skyline]))
+    arctap = request.args.get('arctap')
+    if arctap is not None:
+        arctap = arctap.split(',')
+
+    try:
+        arc = a.Arc(start, stop, start_x, stop_x, easing, start_y, stop_y, color, skyline, arctap)
+    except Exception as e:
+        return make_fail_response('未知错误: ' + str(e))
+    
+    return make_success_response(str(arc))
+
+
+@bp.route('/arc/animate', methods=['GET'])
+def arc_animate():
+    arc = request.args.get('arc')
+    arc = a.loadline(arc)
+    if not isinstance(arc, a.Arc):
+        return make_fail_response(''.join('Invalid Arc string: ', arc))
+    start = int(request.args.get('start'))
+    stop = int(request.args.get('stop'))
+    delta_x = float(request.args.get('delta_x'))
+    delta_y = float(request.args.get('delta_y'))
+    basebpm = float(request.args.get('basebpm'))
+    easing_x = request.args.get('easing_x')
+    easing_b_point_x = request.args.get('easing_b_point_x')
+    if not easing_x:
+        easing_x = 's'
+    elif easing_x == 'b':  # easing_b_point_x转float列表
+        if not easing_b_point_x:
+            easing_b_point_x = [1/3, 0, 2/3, 1]
+        else:
+            easing_b_point_x = easing_b_point_x.split(',')
+            easing_b_point_x = list(map(lambda x: float(x), easing_b_point_x))
+    easing_y = request.args.get('easing_y')
+    easing_b_point_y = request.args.get('easing_b_point_y')
+    if not easing_y:
+        easing_y = 's'
+    elif easing_y == 'b':  # easing_b_point_y转float列表
+        if not easing_b_point_y:
+            easing_b_point_y = [1/3, 0, 2/3, 1]
+        else:
+            easing_b_point_y = easing_b_point_y.split(',')
+            easing_b_point_y = list(map(lambda x: float(x), easing_b_point_y))
+    infbpm = float(request.args.get('infbpm')) if request.args.get('infbpm') else 999999.0
+    framerate = float(request.args.get('framerate')) if request.args.get('framerate') else 60.0
+    fake_note_t = int(request.args.get('fake_note_t')) if request.args.get('fake_note_t') else 100000
+    offset_t = int(request.args.get('offset_t')) if request.args.get('offset_t') else 0
+    delta_offset_t = int(request.args.get('delta_offset_t')) if request.args.get('delta_offset_t') else 0
+    easing_offset_t = request.args.get('easing_offset_t')
+    easing_b_point_offset_t = request.args.get('easing_b_point_offset_t')
+    if not easing_offset_t:
+        easing_offset_t = 's'
+    elif easing_offset_t == 'b':  # easing_b_point_offset_t转float列表
+        if not easing_b_point_offset_t:
+            easing_b_point_offset_t = [1/3, 0, 2/3, 1]
+        else:
+            easing_b_point_offset_t = easing_b_point_offset_t.split(',')
+            easing_b_point_offset_t = list(map(lambda x: float(x), easing_b_point_offset_t))
+
+    count = (stop - start) / 1000 * framerate
+    if count > 1024:
+        return make_fail_response('细分数量过大（最大支持1024细分）')
+    
+    result = a.generator.arc_animation_assist(
+        arc, start, stop, delta_x, delta_y, basebpm, easing_x,easing_b_point_x, easing_y, easing_b_point_y, infbpm, framerate, fake_note_t, offset_t, delta_offset_t, easing_offset_t, easing_b_point_offset_t
+    )
+
+    return make_success_response(str(result))
+
 
 
 @bp.route('/arc/rain', methods=['GET'])
@@ -124,14 +226,24 @@ def timing_easing():
     stop_bpm = request.args.get('stop_bpm')
     count = request.args.get('count')
     bar = request.args.get('bar')
+    easing_mode = request.args.get('easing')
+    easing_b_point = request.args.get('easing_b_point')
+    if not easing_mode:
+        easing_mode = 's'
+    elif easing_mode == 'b':  # easing_b_point转float列表
+        if not easing_b_point:
+            easing_b_point = [1/3, 0, 2/3, 1]
+        else:
+            easing_b_point = easing_b_point.split(',')
+            easing_b_point = list(map(lambda x: float(x), easing_b_point))
 
     if int(count) > 512:
         return make_fail_response('细分数量过大（最大支持512细分）')
 
     try:
-        arclist = a.generator.timing_easing_linear(
+        arclist = a.generator.timing_easing(
             int(start), int(stop), float(start_bpm), float(stop_bpm), int(count),
-            float(bar) if bar is not None else 4.00
+            float(bar) if bar is not None else 4.00, easing_mode, easing_b_point
         )
     except Exception as e:
         return make_fail_response('未知错误: ' + str(e))

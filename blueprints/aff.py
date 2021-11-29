@@ -295,3 +295,41 @@ def chart_offset():
 
     return make_success_response(str(arclist))
 
+
+@bp.route('/chart/align', methods=['GET','POST'])
+def chart_align():
+    if request.method == 'GET':
+        aff = request.args.get('aff')
+        bpm = request.args.get('bpm')
+        error = request.args.get('error')
+        lcd = request.args.get('lcd')
+    elif request.method == 'POST':
+        aff = request.form.get('aff')
+        bpm = request.form.get('bpm')
+        error = request.form.get('error')
+        lcd = request.form.get('lcd')
+
+    try:
+        arclist = a.load(aff)
+        arclist.align(
+            float(bpm), int(error), int(lcd)
+        )
+    except Exception as e:
+        return make_fail_response('未知错误：' + str(e))
+    
+    return make_success_response(str(arclist))
+
+@bp.route('/chart/mirror', methods=['GET','POST'])
+def chart_mirror():
+    if request.method == 'GET':
+        aff = request.args.get('aff')
+    elif request.method == 'POST':
+        aff = request.form.get('aff')
+    
+    try:
+        arclist = a.load(aff)
+        arclist.mirror()
+    except Exception as e:
+        return make_fail_response('未知错误：' + str(e))
+
+    return make_success_response(str(arclist))

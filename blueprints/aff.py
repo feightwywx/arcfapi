@@ -308,6 +308,8 @@ def chart_align():
         bpm = request.form.get('bpm')
         error = request.form.get('error')
         lcd = request.form.get('lcd')
+    if not lcd:
+        lcd = 96
 
     try:
         arclist = a.load(aff)

@@ -8,6 +8,7 @@ from flask import Flask
 from dotenv import load_dotenv
 from .common_responses import make_fail_response, make_success_response
 from werkzeug.exceptions import HTTPException
+from traceback import print_exc
 
 load_dotenv()
 
@@ -28,6 +29,7 @@ def create_app():
 
     @app.errorhandler(Exception)
     def error(e):
+        print_exc()
         return make_fail_response(str(e))
 
     return app

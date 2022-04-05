@@ -2,3 +2,4 @@ venv/
 venv_win/
 *DS_Store
 __pycache__/
+.env

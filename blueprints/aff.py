@@ -7,6 +7,7 @@
 from flask import Blueprint, request
 from arcfutil import aff as a
 from arcfutil import exception as aex
+from arcfutil.aff.easing import get_easing_func
 from ..common_responses import make_success_response, make_fail_response
 
 bp = Blueprint('aff', __name__, url_prefix='/aff')
@@ -151,48 +152,31 @@ def arc_animate():
     delta_x = float(request.args.get('delta_x'))
     delta_y = float(request.args.get('delta_y'))
     basebpm = float(request.args.get('basebpm'))
+
     easing_x = request.args.get('easing_x')
     easing_b_point_x = request.args.get('easing_b_point_x')
-    if not easing_x:
-        easing_x = 's'
-    elif easing_x == 'b':  # easing_b_point_x转float列表
-        if not easing_b_point_x:
-            easing_b_point_x = [1/3, 0, 2/3, 1]
-        else:
-            easing_b_point_x = easing_b_point_x.split(',')
-            easing_b_point_x = list(map(lambda x: float(x), easing_b_point_x))
+    easing_x = get_easing_func(easing_x, list(map(lambda x: float(x), easing_b_point_x)) if easing_b_point_x else [1/3, 0, 2/3, 1])
+
     easing_y = request.args.get('easing_y')
     easing_b_point_y = request.args.get('easing_b_point_y')
-    if not easing_y:
-        easing_y = 's'
-    elif easing_y == 'b':  # easing_b_point_y转float列表
-        if not easing_b_point_y:
-            easing_b_point_y = [1/3, 0, 2/3, 1]
-        else:
-            easing_b_point_y = easing_b_point_y.split(',')
-            easing_b_point_y = list(map(lambda x: float(x), easing_b_point_y))
+    easing_y = get_easing_func(easing_y, list(map(lambda x: float(x), easing_b_point_y)) if easing_b_point_y else [1/3, 0, 2/3, 1])
+
     infbpm = float(request.args.get('infbpm')) if request.args.get('infbpm') else 999999.0
     framerate = float(request.args.get('framerate')) if request.args.get('framerate') else 60.0
     fake_note_t = int(request.args.get('fake_note_t')) if request.args.get('fake_note_t') else 100000
     offset_t = int(request.args.get('offset_t')) if request.args.get('offset_t') else 0
     delta_offset_t = int(request.args.get('delta_offset_t')) if request.args.get('delta_offset_t') else 0
+
     easing_offset_t = request.args.get('easing_offset_t')
     easing_b_point_offset_t = request.args.get('easing_b_point_offset_t')
-    if not easing_offset_t:
-        easing_offset_t = 's'
-    elif easing_offset_t == 'b':  # easing_b_point_offset_t转float列表
-        if not easing_b_point_offset_t:
-            easing_b_point_offset_t = [1/3, 0, 2/3, 1]
-        else:
-            easing_b_point_offset_t = easing_b_point_offset_t.split(',')
-            easing_b_point_offset_t = list(map(lambda x: float(x), easing_b_point_offset_t))
+    easing_offset_t = get_easing_func(easing_offset_t, list(map(lambda x: float(x), easing_b_point_offset_t)) if easing_b_point_offset_t else [1/3, 0, 2/3, 1])
 
     count = (stop - start) / 1000 * framerate
     if count > 1024:
         return make_fail_response('细分数量过大（最大支持1024细分）')
     
     result = a.generator.arc_animation_assist(
-        arc, start, stop, delta_x, delta_y, basebpm, easing_x,easing_b_point_x, easing_y, easing_b_point_y, infbpm, framerate, fake_note_t, offset_t, delta_offset_t, easing_offset_t, easing_b_point_offset_t
+        arc, start, stop, delta_x, delta_y, basebpm, easing_x, easing_y, infbpm, framerate, fake_note_t, offset_t, delta_offset_t, easing_offset_t
     )
 
     return make_success_response(str(result))
